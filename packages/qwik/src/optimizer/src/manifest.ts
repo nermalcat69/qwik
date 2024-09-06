@@ -275,26 +275,35 @@ export function generateManifestFromBundles(
       size: outputBundle.code.length,
     };
 
+    let hasSymbols = false;
+    let hasHW = false;
     for (const symbol of outputBundle.exports) {
       if (qrlNames.has(symbol)) {
         // When not minifying we see both the entry and the segment file
         // The segment file will only have 1 export, we want the entry
         if (!manifest.mapping[symbol] || outputBundle.exports.length !== 1) {
+          hasSymbols = true;
           manifest.mapping[symbol] = bundleFileName;
         }
       }
+      if (symbol === '_hW') {
+        hasHW = true;
+      }
+    }
+    if (hasSymbols && hasHW) {
+      bundle.isTask = true;
     }
 
     const bundleImports = outputBundle.imports
       .filter((i) => path.dirname(i) === buildDirName)
-      .map((i) => path.relative(buildDirName, outputBundles[i].fileName));
+      .map((i) => path.relative(buildDirName, outputBundles[i].fileName || i));
     if (bundleImports.length > 0) {
       bundle.imports = bundleImports;
     }
 
     const bundleDynamicImports = outputBundle.dynamicImports
       .filter((i) => path.dirname(i) === buildDirName)
-      .map((i) => path.relative(buildDirName, outputBundles[i].fileName));
+      .map((i) => path.relative(buildDirName, outputBundles[i].fileName || i));
     if (bundleDynamicImports.length > 0) {
       bundle.dynamicImports = bundleDynamicImports;
     }
